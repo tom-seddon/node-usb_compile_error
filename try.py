@@ -23,8 +23,13 @@ INTERESTING_TYPESCRIPT_VERSIONS=[
 ##########################################################################
 ##########################################################################
 
+g_use_shell=False
+
+##########################################################################
+##########################################################################
+
 def get_version(lib_name):
-    ls_j=json.loads(subprocess.check_output(['npm','ls','--json',lib_name],encoding='utf-8'))
+    ls_j=json.loads(subprocess.check_output(['npm','ls','--json',lib_name],encoding='utf-8',shell=g_use_shell))
 
     assert isinstance(ls_j,dict)
     assert 'dependencies' in ls_j
@@ -37,6 +42,12 @@ def get_version(lib_name):
 ##########################################################################
 
 def main2(options):
+    if os.name=='nt':
+        os.putenv('ComSpec',os.path.join(os.getenv('windir'),'system32\\cmd.exe'))
+        # os.putenv('NO_COLOR','1') # doesn't seem to have an effect
+        global g_use_shell
+        g_use_shell=True
+    
     node_version=subprocess.check_output(['node','--version'],encoding='utf-8').strip()
 
     print('Node version: "%s"'%node_version)
@@ -70,13 +81,13 @@ def main2(options):
 
         if os.path.isfile('package-lock.json'): os.unlink('package-lock.json')
         if os.path.isdir('node_modules'): shutil.rmtree('node_modules')
-        subprocess.run(['npm','install'],check=True)
+        subprocess.run(['npm','install','--no-color'],check=True,shell=g_use_shell)
 
         got_ts_version=get_version('typescript')
         print('Got TS version: %s'%got_ts_version)
         print('Got @types/node version: %s'%get_version('@types/node'))
 
-        compile_result=subprocess.run(['npm','run','compile'],stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+        compile_result=subprocess.run(['npm','run','compile'],stdout=subprocess.PIPE,stderr=subprocess.STDOUT,shell=g_use_shell)
         print('=== Compile result: %d'%compile_result.returncode)
 
         with open(os.path.join(options.output_folder,'%s.txt'%got_ts_version),
