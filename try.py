@@ -6,19 +6,10 @@ import sys,os,os.path,argparse,subprocess,json,shutil,collections,re
 
 Version=collections.namedtuple('Version','major minor')
 
-INTERESTING_TYPESCRIPT_VERSIONS=[
-    Version(major=4,minor=9),
-    Version(major=5,minor=0),
-    Version(major=5,minor=1),
-    Version(major=5,minor=2),
-    Version(major=5,minor=3),
-    Version(major=5,minor=4),
-    Version(major=5,minor=5),
-    Version(major=5,minor=6),
-    Version(major=5,minor=7),
-    Version(major=5,minor=8),
-    Version(major=5,minor=9),
-]    
+g_typescript_versions=[]
+for major in [3,4,5]:
+    for minor in range(10):
+        g_typescript_versions.append(Version(major=major,minor=minor))
 
 ##########################################################################
 ##########################################################################
@@ -47,8 +38,12 @@ def main2(options):
         # os.putenv('NO_COLOR','1') # doesn't seem to have an effect
         global g_use_shell
         g_use_shell=True
-    
-    node_version=subprocess.check_output(['node','--version'],encoding='utf-8').strip()
+
+    if options.node_version is not None:
+        node_version=options.node_version
+    else:
+        node_version=subprocess.check_output(['node','--version'],
+                                             encoding='utf-8').strip()
 
     print('Node version: "%s"'%node_version)
     m=re.match(r'''v(?P<major>[0-9]+)\.(?P<minor>[0-9]+)\.(?P<patch>[0-9]+)$''',node_version)
@@ -58,7 +53,7 @@ def main2(options):
     if not os.path.isdir(options.output_folder):
         os.makedirs(options.output_folder)
     
-    for ts_version in INTERESTING_TYPESCRIPT_VERSIONS:
+    for ts_version in g_typescript_versions:
         with open('package.json','rt',encoding='utf-8') as f:
             package_j=json.load(f)
 
@@ -82,7 +77,8 @@ def main2(options):
         if os.path.isfile('package-lock.json'): os.unlink('package-lock.json')
         if os.path.isdir('node_modules'): shutil.rmtree('node_modules')
 
-        subprocess.run(['npm','cache','clean','--force'],check=True,shell=g_use_shell)
+        if options.clean:
+            subprocess.run(['npm','cache','clean','--force'],check=True,shell=g_use_shell)
 
         # passing '--no-color' here doesn't seem to have any effect
         subprocess.run(['npm','install'],check=True,shell=g_use_shell)
@@ -105,6 +101,8 @@ def main(argv):
     parser=argparse.ArgumentParser()
 
     parser.add_argument('-o',dest='output_folder',default='./try_result',metavar='FOLDER',help='''write output files to %(metavar)s, creating if required. Default: %(default)s''')
+    parser.add_argument('--clean',action='store_true',help='''clean npm cache after each go''')
+    parser.add_argument('--node-version',metavar='VERSION',default=None,help='''set Node version explicitly, using exact same format as node --version (e.g., "v22.11.0"). Otherwise, run node --version to figure it out''')
 
     main2(parser.parse_args(argv))
 
