@@ -81,7 +81,11 @@ def main2(options):
 
         if os.path.isfile('package-lock.json'): os.unlink('package-lock.json')
         if os.path.isdir('node_modules'): shutil.rmtree('node_modules')
-        subprocess.run(['npm','install','--no-color'],check=True,shell=g_use_shell)
+
+        subprocess.run(['npm','cache','clean','--force'],check=True,shell=g_use_shell)
+
+        # passing '--no-color' here doesn't seem to have any effect
+        subprocess.run(['npm','install'],check=True,shell=g_use_shell)
 
         got_ts_version=get_version('typescript')
         print('Got TS version: %s'%got_ts_version)
