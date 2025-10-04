@@ -44,11 +44,11 @@ def main2(options):
     else:
         node_version=subprocess.check_output(['node','--version'],
                                              encoding='utf-8').strip()
-
-    print('Node version: "%s"'%node_version)
-    m=re.match(r'''v(?P<major>[0-9]+)\.(?P<minor>[0-9]+)\.(?P<patch>[0-9]+)$''',node_version)
-    assert m is not None
-    node_version=Version(int(m.group('major')),int(m.group('minor')))
+        print('Node version: "%s"'%node_version)
+        m=re.match(r'''v(?P<major>[0-9]+)\.(?P<minor>[0-9]+)\.(?P<patch>[0-9]+)$''',node_version)
+        assert m is not None
+        node_version=Version(int(m.group('major')),int(m.group('minor')))
+        node_version='~%d.0.0'%(node_version.major)
 
     if not os.path.isdir(options.output_folder):
         os.makedirs(options.output_folder)
@@ -64,7 +64,7 @@ def main2(options):
         package_j['devDependencies']['typescript']='~%d.%d.0'%(ts_version.major,ts_version.minor)
 
         assert '@types/node' in package_j['devDependencies']
-        package_j['devDependencies']['@types/node']='~%d.0.0'%(node_version.major)
+        package_j['devDependencies']['@types/node']=node_version
 
         print(80*'=')
         print()
@@ -102,7 +102,7 @@ def main(argv):
 
     parser.add_argument('-o',dest='output_folder',default='./try_result',metavar='FOLDER',help='''write output files to %(metavar)s, creating if required. Default: %(default)s''')
     parser.add_argument('--clean',action='store_true',help='''clean npm cache after each go''')
-    parser.add_argument('--node-version',metavar='VERSION',default=None,help='''set Node version explicitly, using exact same format as node --version (e.g., "v22.11.0"). Otherwise, run node --version to figure it out''')
+    parser.add_argument('--node-version',metavar='VERSION',default=None,help='''set Node version explicitly, using package.json syntax. Otherwise, run node --version to figure it out''')
 
     main2(parser.parse_args(argv))
 
